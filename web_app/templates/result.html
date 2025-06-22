@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Results | UCF Video Anomaly Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Detection Results
+                            </h2>
+                            <a href="{{ url_for('index') }}" class="btn btn-light">
+                                <i class="fas fa-arrow-left me-2"></i>New Detection
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="ratio ratio-16x9 mb-3">
+                                    <video controls>
+                                        <source src="{{ url_for('static', filename=prediction_video) }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-muted">Video with detection overlay</p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="result-summary">
+                                    <div class="card mb-3 border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0">Primary Detection</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="text-center mb-3">
+                                                <span class="badge bg-{{ 'success' if predicted_class == 'Normal' else 'danger' }}">
+                                                    {{ predicted_class }}
+                                                </span>
+                                            </h3>
+                                            <div class="progress mb-3" style="height: 25px;">
+                                                <div class="progress-bar {{ 'bg-success' if predicted_class == 'Normal' else 'bg-danger' }}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ confidence * 100 }}%;"
+                                                     aria-valuenow="{{ confidence * 100 }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ "%.1f"|format(confidence * 100) }}%
+                                                </div>
+                                            </div>
+                                            <p class="text-center text-muted">Model Confidence</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card border-secondary">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h5 class="mb-0">Detection Details</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Processing Time:</span>
+                                                    <span>{{ "%.2f"|format(processing_time) }} seconds</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Anomalous Frames:</span>
+                                                    <span>{{ anomalous_frames }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Analyzed Frames:</span>
+                                                    <span>{{ total_frames }}</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-info mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-chart-line me-2"></i>
+                                            Anomaly Score Timeline
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="anomalyChart" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Top Anomalous Moments
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Time</th>
+                                                        <th>Score</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for moment in top_moments %}
+                                                    <tr>
+                                                        <td>{{ moment.time }}</td>
+                                                        <td>
+                                                            <div class="progress" style="height: 20px;">
+                                                                <div class="progress-bar bg-danger" 
+                                                                     role="progressbar" 
+                                                                     style="width: {{ moment.score * 100 }}%">
+                                                                    {{ "%.1f"|format(moment.score * 100) }}%
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-primary seek-video" 
+                                                                    data-time="{{ moment.seconds }}">
+                                                                <i class="fas fa-play me-1"></i>View
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border-dark">
+                                    <div class="card-header bg-dark text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-cog me-2"></i>
+                                            Detection Settings
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>Model Used:</span>
+                                                <span class="badge bg-primary">{{ model_name }}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>Detection Threshold:</span>
+                                                <span>{{ threshold }}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>Frame Sampling Rate:</span>
+                                                <span>{{ frame_rate }} fps</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>Input Resolution:</span>
+                                                <span>{{ input_resolution }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('download_report', filename=report_filename) }}" class="btn btn-success me-2">
+                                <i class="fas fa-download me-2"></i>
+                                Download Report
+                            </a>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize anomaly chart
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx = document.getElementById('anomalyChart').getContext('2d');
+            const anomalyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ time_labels|safe }},
+                    datasets: [{
+                        label: 'Anomaly Score',
+                        data: {{ anomaly_scores|safe }},
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Threshold',
+                        data: Array({{ time_labels|safe }}.length).fill({{ threshold }}),
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0,
+                            title: {
+                                display: true,
+                                text: 'Anomaly Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return 'Time: ' + tooltipItems[0].label + ' s';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Handle seek video buttons
+            const video = document.querySelector('video');
+            const seekButtons = document.querySelectorAll('.seek-video');
+            
+            seekButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const seekTime = parseFloat(this.getAttribute('data-time'));
+                    video.currentTime = seekTime;
+                    video.play();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

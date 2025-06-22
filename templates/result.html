@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detection Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .result-container {
+            margin-top: 30px;
+        }
+        .video-container {
+            margin: 20px 0;
+        }
+        video {
+            max-width: 100%;
+        }
+        .stats {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detection Results</h1>
+    
+    <div class="stats">
+        <h2>Prediction: {{ predicted_class }}</h2>
+        <p><strong>Confidence:</strong> {{ "%.2f"|format(confidence*100) }}%</p>
+        <p><strong>Processing Time:</strong> {{ "%.2f"|format(processing_time) }} seconds</p>
+    </div>
+    
+    <div class="result-container">
+        <h2>Original Video</h2>
+        <div class="video-container">
+            <video controls>
+                <source src="{{ url_for('static', filename='uploads/' + original_video) }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <h2>Visualization with Predictions</h2>
+        <div class="video-container">
+            <video controls>
+                <source src="{{ url_for('static', filename='uploads/vis_' + prediction_video) }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <h2>Prediction Distribution</h2>
+        <table>
+            <tr>
+                <th>Class</th>
+                <th>Count</th>
+                <th>Percentage</th>
+            </tr>
+            {% for class_name, data in class_counts.items() %}
+            <tr>
+                <td>{{ class_name }}</td>
+                <td>{{ data.count }}</td>
+                <td>{{ "%.2f"|format(data.percentage) }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    
+    <a href="{{ url_for('index') }}" class="btn">Analyze Another Video</a>
+</body>
+</html>

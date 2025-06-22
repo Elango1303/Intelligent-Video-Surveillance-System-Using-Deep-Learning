@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCF Video Anomaly Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="text-center mb-0">
+                            <i class="fas fa-video me-2"></i>
+                            Video Anomaly Detection
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <p class="lead">Upload a video to detect anomalies using our 3D CNN model</p>
+                            <p>The model is trained on the UCF Crime dataset and can detect 14 different events</p>
+                        </div>
+
+                        <!-- Flash messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}" role="alert">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="upload-form">
+                            <div class="mb-4">
+                                <div class="upload-area" id="upload-area">
+                                    <i class="fas fa-cloud-upload-alt fa-4x mb-3"></i>
+                                    <h4>Drag & Drop Video Here</h4>
+                                    <p>or</p>
+                                    <label for="video-upload" class="btn btn-primary">
+                                        <i class="fas fa-file-upload me-2"></i>Browse Files
+                                    </label>
+                                    <input type="file" name="video" id="video-upload" accept=".mp4,.avi,.mov,.mkv" hidden>
+                                    <p class="text-muted mt-2">Supported formats: MP4, AVI, MOV, MKV</p>
+                                    <p class="text-muted">Maximum size: 100MB</p>
+                                </div>
+                            </div>
+
+                            <div id="file-info" class="mb-3 d-none">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file-video me-2 text-primary"></i>
+                                    <span id="filename">No file selected</span>
+                                    <button type="button" class="btn btn-sm btn-link text-danger ms-auto" id="remove-file">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg" id="submit-btn" disabled>
+                                    <i class="fas fa-search me-2"></i>Detect Anomalies
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer">
+                        <div class="accordion" id="accordionClasses">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingClasses">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseClasses" aria-expanded="false" aria-controls="collapseClasses">
+                                        <i class="fas fa-list-ul me-2"></i>Detectable Events
+                                    </button>
+                                </h2>
+                                <div id="collapseClasses" class="accordion-collapse collapse" aria-labelledby="headingClasses" data-bs-parent="#accordionClasses">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-group">
+                                                    <li class="list-group-item"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Abuse</li>
+                                                    <li class="list-group-item"><i class="fas fa-handcuffs text-secondary me-2"></i>Arrest</li>
+                                                    <li class="list-group-item"><i class="fas fa-fire text-warning me-2"></i>Arson</li>
+                                                    <li class="list-group-item"><i class="fas fa-hand-fist text-danger me-2"></i>Assault</li>
+                                                    <li class="list-group-item"><i class="fas fa-house-lock text-primary me-2"></i>Burglary</li>
+                                                    <li class="list-group-item"><i class="fas fa-bomb text-danger me-2"></i>Explosion</li>
+                                                    <li class="list-group-item"><i class="fas fa-people-arrows text-warning me-2"></i>Fighting</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-group">
+                                                    <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Normal</li>
+                                                    <li class="list-group-item"><i class="fas fa-car-burst text-danger me-2"></i>Road Accidents</li>
+                                                    <li class="list-group-item"><i class="fas fa-mask text-dark me-2"></i>Robbery</li>
+                                                    <li class="list-group-item"><i class="fas fa-gun text-danger me-2"></i>Shooting</li>
+                                                    <li class="list-group-item"><i class="fas fa-shirt text-info me-2"></i>Shoplifting</li>
+                                                    <li class="list-group-item"><i class="fas fa-hand-holding-dollar text-success me-2"></i>Stealing</li>
+                                                    <li class="list-group-item"><i class="fas fa-hammer text-secondary me-2"></i>Vandalism</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <div class="loading d-none" id="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing video... This may take a few minutes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
